@@ -139,12 +139,39 @@ const editPhone = document.getElementById('edit-phone');
 const editTicket = document.getElementById('edit-ticket');
 const editPaid = document.getElementById('edit-paid');
 
+// Elementos para búsqueda y filtro
+let adminSearchInput, adminFilterAll, adminFilterPaid, adminFilterUnpaid;
+if (adminPanel) {
+  const searchDiv = document.createElement('div');
+  searchDiv.style.marginBottom = '8px';
+  adminSearchInput = document.createElement('input');
+  adminSearchInput.type = 'text';
+  adminSearchInput.placeholder = 'Buscar por nombre...';
+  adminSearchInput.style.marginRight = '8px';
+  searchDiv.appendChild(adminSearchInput);
+  adminFilterAll = document.createElement('button');
+  adminFilterAll.textContent = 'Todos';
+  adminFilterPaid = document.createElement('button');
+  adminFilterPaid.textContent = 'Pagaron';
+  adminFilterUnpaid = document.createElement('button');
+  adminFilterUnpaid.textContent = 'No pagaron';
+  [adminFilterAll, adminFilterPaid, adminFilterUnpaid].forEach(btn => {
+    btn.style.marginRight = '4px';
+    searchDiv.appendChild(btn);
+  });
+  adminPanel.insertBefore(searchDiv, adminPanel.firstChild);
+}
+let adminCurrentFilter = 'all';
+
 let adminUnlocked = false;
 let editingParticipantId = null;
 
 if (adminOpen) {
   adminOpen.addEventListener('click', () => {
     if (adminPinModal) adminPinModal.setAttribute('aria-hidden', 'false');
+    // Reset search/filter when opening admin panel
+    if (adminSearchInput) adminSearchInput.value = '';
+    adminCurrentFilter = 'all';
   });
 }
 
@@ -166,13 +193,25 @@ if (adminPinForm) {
 
 async function renderAdminList() {
   if (!adminList) return;
-  const parts = participantsCache.length ? participantsCache : await fetchParticipants();
+  let parts = participantsCache.length ? participantsCache : await fetchParticipants();
+  // Apply search filter
+  const search = adminSearchInput ? adminSearchInput.value.trim().toLowerCase() : '';
+  if (search) {
+    parts = parts.filter(p => (p.name || '').toLowerCase().includes(search));
+  }
+  // Apply paid/unpaid filter
+  if (adminCurrentFilter === 'paid') parts = parts.filter(p => !!p.paid);
+  else if (adminCurrentFilter === 'unpaid') parts = parts.filter(p => !p.paid);
+
   adminList.innerHTML = '';
   if (!parts.length) { adminList.textContent = 'No hay participantes.'; return; }
+
   parts.forEach(p => {
     const row = document.createElement('div');
     row.className = 'admin-row';
-    row.innerHTML = `<strong>${p.name || '—'}</strong> (${p.phone || '—'}) — Ticket: ${p.ticketNumber || '—'}`;
+    const pagoText = p.paid ? 'Pagó' : 'No pagó';
+    const pagoClass = p.paid ? 'admin-paid' : 'admin-unpaid';
+    row.innerHTML = `<strong>${p.name || '—'}</strong> (${p.phone || '—'}) — Ticket: ${p.ticketNumber || '—'} <span class="${pagoClass}" style="margin-left:8px">${pagoText}</span>`;
     const btnEdit = document.createElement('button'); btnEdit.textContent = 'Editar';
     const btnDel = document.createElement('button'); btnDel.textContent = 'Eliminar';
     btnEdit.addEventListener('click', () => openEditParticipant(p));
@@ -181,6 +220,12 @@ async function renderAdminList() {
     adminList.appendChild(row);
   });
 }
+
+// Wire up search and filter controls (if present)
+if (adminSearchInput) adminSearchInput.addEventListener('input', () => renderAdminList());
+if (adminFilterAll) adminFilterAll.addEventListener('click', () => { adminCurrentFilter = 'all'; renderAdminList(); });
+if (adminFilterPaid) adminFilterPaid.addEventListener('click', () => { adminCurrentFilter = 'paid'; renderAdminList(); });
+if (adminFilterUnpaid) adminFilterUnpaid.addEventListener('click', () => { adminCurrentFilter = 'unpaid'; renderAdminList(); });
 
 function openEditParticipant(p) {
   editingParticipantId = p.id;
