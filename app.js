@@ -15,6 +15,7 @@ const firebaseConfig = {
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
 const PARTICIPANTS_COL = 'participants';
 // If you want to read PIN from a fixed document, set its id here
 const PIN_DOC_ID = 'XCjWroaonz1bzNthSGQT';
