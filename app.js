@@ -2,14 +2,14 @@
 // Código básico para interactuar con Firestore (compat) y manejar la UI
 
 // --- CONFIGURACIÓN ---
-// Configuración de Firebase desde variables de entorno
+// Configuración de Firebase
 const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID
+  apiKey: "AIzaSyBuvYBZUYfFcX8NPiHgYVQHlNb7rsEvtLs",
+  authDomain: "testt-432a7.firebaseapp.com",
+  projectId: "testt-432a7",
+  storageBucket: "testt-432a7.firebasestorage.app",
+  messagingSenderId: "377883179539",
+  appId: "1:377883179539:web:8ecece01b14a8bd65a5de6"
 };
 
 // Inicializar Firebase
@@ -45,7 +45,7 @@ let serverPin = null; // PIN stored in Firestore (participants collection)
 // If you deploy the Cloud Function, set FUNCTIONS_BASE_URL to the function base URL
 // e.g. https://us-central1-YOUR_PROJECT.cloudfunctions.net/api
 const FUNCTIONS_BASE_URL = '';
-const ADMIN_PIN = process.env.ADMIN_PIN;
+const ADMIN_PIN = "1234";
 
 // --- FUNCIONES ---
 async function fetchParticipants() {
