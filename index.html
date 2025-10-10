@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Rifa - Proyecto</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Rifa</h1>
+    <div class="baas-badge">BaaS: <strong>Firebase • Firestore</strong> — configura <code>firebaseConfig</code> en <code>js/app.js</code></div>
+
+    <section class="card">
+      <h2>Matriz de la rifa (10 × 10)</h2>
+      <div class="muted">Haz click en un número disponible para reservarlo.</div>
+      <div id="matrix" class="matrix-grid matrix-10x10" aria-live="polite"></div>
+      <!-- debug UI removed: no sensitive info is displayed in production -->
+    </section>
+
+    <!-- Modal para reservar ticket -->
+    <div id="ticket-modal" class="modal" aria-hidden="true">
+      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <h3 id="modal-title">Reservar ticket <span id="modal-ticket-num"></span></h3>
+        <form id="ticket-form">
+          <label for="ticket-name">Nombre</label>
+          <input id="ticket-name" name="name" required>
+
+          <label for="ticket-phone">Teléfono</label>
+          <input id="ticket-phone" name="phone" required>
+
+          <label><input id="ticket-paid" type="checkbox"> Pagó</label>
+
+          <label for="admin-pin">PIN admin (rápido, no requiere sesión)</label>
+          <input id="admin-pin" name="admin-pin" placeholder="PIN rápido" autocomplete="off">
+
+          <div class="modal-actions">
+            <button type="submit">Reservar</button>
+            <button type="button" id="modal-cancel">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Participar and participantes removed — matrix-focused UI -->
+
+    <section class="card">
+      <h2>Sorteo</h2>
+      <button id="draw-btn">Sortear ganador</button>
+      <div id="winner" class="winner"></div>
+    </section>
+    
+    <section class="card">
+      <h2>Administración</h2>
+      <div class="muted">Acciones administrativas (requieren PIN admin).</div>
+      <button id="admin-open">Administrar participantes</button>
+      <div id="admin-panel" style="display:none; margin-top:12px">
+        <h3>Participantes</h3>
+        <div id="admin-list"></div>
+      </div>
+    </section>
+
+    <!-- Admin PIN modal (password) -->
+    <div id="admin-pin-modal" class="modal" aria-hidden="true">
+      <div class="modal-content" role="dialog" aria-modal="true">
+        <h3>PIN Administrador</h3>
+        <p>Introduce tu PIN de administrador para acceder a las funciones de edición/eliminación.</p>
+        <form id="admin-pin-form">
+          <input id="admin-pin-entry" type="password" placeholder="PIN" autocomplete="off" required>
+          <div class="modal-actions">
+            <button type="submit">Aceptar</button>
+            <button type="button" id="admin-pin-cancel">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Participant edit modal -->
+    <div id="participant-edit-modal" class="modal" aria-hidden="true">
+      <div class="modal-content" role="dialog" aria-modal="true">
+        <h3>Editar participante</h3>
+        <form id="participant-edit-form">
+          <label for="edit-name">Nombre</label>
+          <input id="edit-name" required>
+          <label for="edit-phone">Teléfono</label>
+          <input id="edit-phone" required>
+          <label for="edit-ticket">Ticket #</label>
+          <input id="edit-ticket" type="number" min="1" max="100">
+          <label><input id="edit-paid" type="checkbox"> Pagó</label>
+          <div class="modal-actions">
+            <button type="submit">Guardar</button>
+            <button type="button" id="participant-edit-cancel">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- auth removed: quick PIN flow uses server-side PIN stored in participants -->
+  <script src="app.js"></script>
+</body>
+</html>

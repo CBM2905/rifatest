@@ -1,0 +1,78 @@
+:root{
+  --bg:#f3f4f6;
+  --card:#ffffff;
+  --accent:#2563eb;
+  --muted:#6b7280;
+}
+*{box-sizing:border-box}
+body{font-family:Inter, system-ui, Arial, sans-serif;background:var(--bg);margin:0;padding:0}
+.container{max-width:1100px;margin:0 auto;padding:28px;box-sizing:border-box;overflow-x:hidden}
+html,body{overflow-x:hidden}
+h1{text-align:center}
+.baas-badge{background:#eef2ff;color:#1e3a8a;padding:8px 12px;border-radius:8px;display:inline-block;margin:8px auto 0;border:1px solid rgba(37,99,235,0.12)}
+.baas-badge code{background:rgba(0,0,0,0.04);padding:2px 6px;border-radius:4px;font-size:90%}
+.card{background:var(--card);padding:20px;margin:18px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.06);overflow:hidden;word-wrap:break-word}
+label{display:block;margin-top:8px}
+input{width:100%;padding:8px;margin-top:4px;border:1px solid #e5e7eb;border-radius:6px}
+button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:6px;margin-top:12px;cursor:pointer}
+button:disabled{opacity:0.6}
+.muted{color:var(--muted);margin-top:8px}
+#winner{margin-top:12px;font-weight:700;color:#059669}
+/* participants list removed */
+
+.matrix-grid{display:grid;gap:12px;margin-top:16px;min-width:0}
+.matrix-cell{background:var(--card);padding:14px;border-radius:10px;border:1px solid #e6edf3;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80px;min-width:0}
+.matrix-cell .small{font-size:14px;color:var(--muted);text-align:center;word-break:break-word;overflow-wrap:anywhere}
+.matrix-cell .ticket-num{font-weight:700;font-size:20px;color:#0f172a}
+.matrix-cell{position:relative}
+
+/* Tooltip */
+.matrix-tooltip{position:absolute;left:50%;transform:translateX(-50%);bottom:110%;background:#111827;color:#fff;padding:6px 8px;border-radius:6px;font-size:12px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease,transform .12s ease}
+.matrix-cell:hover .matrix-tooltip{opacity:1;transform:translateX(-50%) translateY(-4px);pointer-events:auto}
+.matrix-tooltip::after{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border-width:6px 6px 0 6px;border-style:solid;border-color:#111827 transparent transparent transparent}
+
+/* 10x10 specific */
+.matrix-10x10{grid-template-columns:repeat(10,minmax(0,1fr));grid-auto-rows:80px}
+.matrix-cell.taken{background:#f8fafc;color:#9ca3af;border-color:#e6e9ef}
+.matrix-cell.taken::after{content:'X';position:absolute;right:8px;top:6px;font-weight:700;color:#ef4444}
+.matrix-cell.available{cursor:pointer}
+.matrix-cell .ticket-num{font-weight:700;font-size:16px}
+
+/* Modal */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,0.5);z-index:50}
+.modal[aria-hidden="false"]{display:flex}
+.modal-content{background:var(--card);padding:16px;border-radius:8px;max-width:380px;width:100%;box-shadow:0 8px 30px rgba(2,6,23,0.15)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .container{padding:0 20px}
+  .matrix-10x10{grid-template-columns:repeat(8,minmax(0,1fr));grid-auto-rows:72px}
+}
+
+@media (max-width: 1024px) {
+  .container{padding:0 16px}
+  .matrix-10x10{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:72px}
+}
+
+@media (max-width: 720px) {
+  .container{padding:0 12px}
+  .matrix-10x10{grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:68px}
+  .matrix-cell{min-height:68px;padding:10px}
+  .baas-badge{display:block;text-align:center;margin-left:auto;margin-right:auto}
+  .modal-content{max-width:340px;padding:14px}
+}
+
+@media (max-width: 420px) {
+  /* mobile: compress to 2 columns for readability */
+  .matrix-10x10{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:80px;gap:8px}
+  .matrix-cell .ticket-num{font-size:16px}
+}
+
+/* Admin panel rows */
+.admin-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9}
+.admin-row button{margin-left:8px}
+
+/* Ensure .card stays within container and doesn't float */
+.card{width:100%;box-sizing:border-box}
+.matrix-winner{background:linear-gradient(90deg,#ecfccb,#bbf7d0);border-color:#86efac;box-shadow:0 6px 18px rgba(6,95,70,0.08);transform:scale(1.03)}
