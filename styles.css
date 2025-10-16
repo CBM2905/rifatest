@@ -1,17 +1,102 @@
+/* Tarjeta principal Orion */
+.main-card {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(160,82,45,0.10);
+  border: 2.5px solid var(--accent);
+  max-width: 420px;
+  margin: 32px auto 24px auto;
+  padding: 32px 24px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.orion-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.orion-img {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--accent);
+  box-shadow: 0 4px 16px rgba(160,82,45,0.18);
+  margin-bottom: 8px;
+}
+.orion-nombre {
+  font-size: 1.7em;
+  color: var(--accent);
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+.orion-titulo {
+  font-size: 2em;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 8px;
+  font-family: 'Inter', 'Arial', sans-serif;
+}
+.orion-frase {
+  font-size: 1.15em;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 18px;
+  font-style: italic;
+}
+.orion-btn {
+  background: linear-gradient(90deg, #a0522d 60%, #e2b07a 100%);
+  color: #fff;
+  font-size: 1.15em;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  margin-top: 8px;
+  box-shadow: 0 2px 8px rgba(160,82,45,0.10);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.orion-btn:hover {
+  background: linear-gradient(90deg, #e2b07a 0%, #a0522d 100%);
+  transform: scale(1.04);
+}
 :root{
-  --bg:#f3f4f6;
+  --bg:#fffaf7; /* fondo cálido, blanco hueso */
   --card:#ffffff;
-  --accent:#2563eb;
-  --muted:#6b7280;
+  --accent:#a0522d; /* marrón bull terrier */
+  --muted:#222; /* negro para detalles */
+  --paw:#a0522d;
 }
 *{box-sizing:border-box}
-body{font-family:Inter, system-ui, Arial, sans-serif;background:var(--bg);margin:0;padding:0}
+body{font-family:Inter, system-ui, Arial, sans-serif;background:var(--bg);margin:0;padding:0;}
+body::before {
+  content: '';
+  position: fixed;
+  left: 0; top: 0; width: 100vw; height: 100vh;
+  background: url('https://cdn.pixabay.com/photo/2017/01/06/19/15/dog-1958559_1280.png') repeat 0 0;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
 .container{max-width:1100px;margin:0 auto;padding:28px;box-sizing:border-box;overflow-x:hidden}
 html,body{overflow-x:hidden}
-h1{text-align:center}
+h1{text-align:center;position:relative;padding-left:48px;}
+h1::before {
+  content: '';
+  display: inline-block;
+  width: 40px; height: 40px;
+  background: url('https://cdn.pixabay.com/photo/2017/01/06/19/15/dog-1958559_1280.png') center/cover no-repeat;
+  position: absolute; left:0; top:50%; transform:translateY(-50%);
+  border-radius:50%; box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
 .baas-badge{background:#eef2ff;color:#1e3a8a;padding:8px 12px;border-radius:8px;display:inline-block;margin:8px auto 0;border:1px solid rgba(37,99,235,0.12)}
 .baas-badge code{background:rgba(0,0,0,0.04);padding:2px 6px;border-radius:4px;font-size:90%}
-.card{background:var(--card);padding:20px;margin:18px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.06);overflow:hidden;word-wrap:break-word}
+.card{background:var(--card);padding:20px;margin:18px 0;border-radius:10px;box-shadow:0 2px 6px rgba(160,82,45,0.08);overflow:hidden;word-wrap:break-word;border:2px solid var(--accent)}
 label{display:block;margin-top:8px}
 input{width:100%;padding:8px;margin-top:4px;border:1px solid #e5e7eb;border-radius:6px}
 button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:6px;margin-top:12px;cursor:pointer}
@@ -21,9 +106,14 @@ button:disabled{opacity:0.6}
 /* participants list removed */
 
 .matrix-grid{display:grid;gap:12px;margin-top:16px;min-width:0}
-.matrix-cell{background:var(--card);padding:14px;border-radius:10px;border:1px solid #e6edf3;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80px;min-width:0}
+.matrix-cell{background:var(--card);padding:14px;border-radius:10px;border:2px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80px;min-width:0;box-shadow:0 2px 8px rgba(160,82,45,0.04)}
 .matrix-cell .small{font-size:14px;color:var(--muted);text-align:center;word-break:break-word;overflow-wrap:anywhere}
-.matrix-cell .ticket-num{font-weight:700;font-size:20px;color:#0f172a}
+.matrix-cell .small::after {
+  content: ' 🐾';
+  color: var(--paw);
+  font-size: 16px;
+}
+.matrix-cell .ticket-num{font-weight:700;font-size:20px;color:var(--accent)}
 .matrix-cell{position:relative}
 
 /* Download overlay for all tickets */

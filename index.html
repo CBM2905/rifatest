@@ -8,9 +8,15 @@
 </head>
 <body>
   <main class="container">
-    <h1>Rifa</h1>    
-      <h2>Matriz de la rifa (10 × 10)</h2>
-      <div class="muted">Haz click en un número disponible para reservarlo.</div>
+    <section class="main-card">
+      <div class="orion-header">
+        <img src="public/lorach.jpg" alt="Foto de Orion" class="orion-img">
+        <div class="orion-nombre">Orion</div>
+      </div>
+      <h1 class="orion-titulo">Rifa en memoria de Orion 🐾</h1>
+  <div class="orion-frase">Cada ticket ayuda a despedir a Orion con cariño.<br>¡Gracias por tu apoyo!</div>
+      <button class="orion-btn" onclick="window.scrollTo({top:document.getElementById('matrix').offsetTop-40,behavior:'smooth'});">Participar ahora</button>
+    </section>
       <div id="matrix" class="matrix-grid matrix-10x10" aria-live="polite"></div>
       <!-- debug UI removed: no sensitive info is displayed in production -->
     </section>
