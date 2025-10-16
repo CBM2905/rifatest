@@ -103,17 +103,19 @@
       // Try to fetch config.js first (HEAD) to see if it exists and is JS
       fetch('config.js', { method: 'HEAD' }).then(resp => {
         const hasConfig = resp.ok && resp.headers.get('content-type') && resp.headers.get('content-type').includes('javascript');
-        const loadOrder = [];
-        if (hasConfig) loadOrder.push('config.js');
-        loadOrder.push('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
-        loadOrder.push('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js');
-        loadOrder.push('app.js');
+  const loadOrder = [];
+  if (hasConfig) loadOrder.push('config.js');
+  loadOrder.push('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+  loadOrder.push('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js');
+  // jsPDF (UMD) to allow generating receipts client-side
+  loadOrder.push('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  loadOrder.push('app.js');
 
         // sequential load
         loadOrder.reduce((p, src) => p.then(() => loadScript(src)).catch(() => loadScript(src)), Promise.resolve());
       }).catch(() => {
         // If HEAD fails (e.g., local server doesn't support HEAD), just attempt loads but skip config.js
-        const loadOrder = ['https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js', 'app.js'];
+  const loadOrder = ['https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'app.js'];
         loadOrder.reduce((p, src) => p.then(() => loadScript(src)).catch(() => loadScript(src)), Promise.resolve());
       });
     })();

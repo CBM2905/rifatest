@@ -26,6 +26,23 @@ button:disabled{opacity:0.6}
 .matrix-cell .ticket-num{font-weight:700;font-size:20px;color:#0f172a}
 .matrix-cell{position:relative}
 
+/* Download overlay for all tickets */
+.matrix-cell .download-btn {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  background: rgba(37,99,235,0.95);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  display: none;
+  cursor: pointer;
+}
+.matrix-cell:hover .download-btn { display: inline-block; }
+.matrix-cell.show-download .download-btn { display: inline-block; }
+
 /* Tooltip */
 .matrix-tooltip{position:absolute;left:50%;transform:translateX(-50%);bottom:110%;background:#111827;color:#fff;padding:6px 8px;border-radius:6px;font-size:12px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease,transform .12s ease}
 .matrix-cell:hover .matrix-tooltip{opacity:1;transform:translateX(-50%) translateY(-4px);pointer-events:auto}

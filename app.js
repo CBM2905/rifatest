@@ -214,11 +214,189 @@ async function renderAdminList() {
     row.innerHTML = `<strong>${p.name || '—'}</strong> (${p.phone || '—'}) — Ticket: ${p.ticketNumber || '—'} <span class="${pagoClass}" style="margin-left:8px">${pagoText}</span>`;
     const btnEdit = document.createElement('button'); btnEdit.textContent = 'Editar';
     const btnDel = document.createElement('button'); btnDel.textContent = 'Eliminar';
+    // Add download button for paid participants
+    const btnDownload = document.createElement('button'); btnDownload.textContent = 'Descargar';
+    if (!p.paid) btnDownload.disabled = true; // only enabled for paid
     btnEdit.addEventListener('click', () => openEditParticipant(p));
     btnDel.addEventListener('click', () => deleteParticipant(p));
+    btnDownload.addEventListener('click', () => {
+      try {
+        generateReceipt(p);
+      } catch (err) { console.error('PDF error', err); alert('Error generando PDF'); }
+    });
     row.appendChild(btnEdit); row.appendChild(btnDel);
+    row.appendChild(btnDownload);
     adminList.appendChild(row);
   });
+}
+
+// Generate a simple receipt PDF using jsPDF (UMD bundle exposes window.jspdf)
+async function generateReceipt(p) {
+  // Ensure jsPDF is available
+  const jspdfLib = window.jspdf || window.jsPDF || null;
+  if (!jspdfLib) {
+    alert('La librería jsPDF no está cargada');
+    return;
+  }
+  // UMD bundle may expose as { jsPDF: function }
+  const jsPDF = jspdfLib.jsPDF || jspdfLib;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  // Header
+  doc.setFillColor(37, 99, 235); // blue
+  doc.rect(0, 0, pageW, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Recibo de pago', 14, 18);
+  // Small subtitle
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Comprobante generado automáticamente', 14, 24);
+
+  // Receipt meta (right side)
+  const now = new Date();
+  const receiptId = p.id ? `${p.id.substring(0,6)}-${now.getTime().toString().slice(-5)}` : `T${p.ticketNumber || 'NA'}-${now.getTime().toString().slice(-5)}`;
+  doc.setTextColor(44, 62, 80);
+  doc.setFontSize(9);
+  doc.text(`Recibo: ${receiptId}`, pageW - 14, 18, { align: 'right' });
+  doc.text(`Fecha: ${now.toLocaleString()}`, pageW - 14, 24, { align: 'right' });
+
+  // Boxed details
+  doc.setDrawColor(222, 226, 230);
+  doc.setFillColor(249, 250, 251);
+  const boxY = 36;
+  doc.roundedRect(12, boxY, pageW - 24, 50, 4, 4, 'FD');
+  doc.setTextColor(33, 37, 41);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Nombre', 16, boxY + 10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(p.name || '—', 16, boxY + 18);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Ticket', pageW / 2, boxY + 10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(String(p.ticketNumber || '—'), pageW / 2, boxY + 18);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Teléfono', 16, boxY + 34);
+  doc.setFont('helvetica', 'normal');
+  doc.text(p.phone || p.email || '—', 16, boxY + 42);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Estado', pageW / 2, boxY + 34);
+  doc.setFont('helvetica', 'normal');
+  doc.text(p.paid ? 'Pagó' : 'No pagó', pageW / 2, boxY + 42);
+
+  // Amount section (if payment amount present)
+  if (p.amount || p.price) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Importe', pageW - 60, boxY + 10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(String(p.amount || p.price), pageW - 60, boxY + 18);
+  }
+
+  // Footer note
+  doc.setFontSize(10);
+  doc.setTextColor(100, 116, 139);
+  doc.text('Gracias por tu pago. Conserva este comprobante como comprobante de admisión.', 14, boxY + 72);
+  doc.text('La rifa será el 20 de octubre — estén atentos.', 14, boxY + 82);
+  // Small canvas-generated logo (circular) and QR code
+  try {
+    // create a tiny logo via canvas
+    const logoCanvas = document.createElement('canvas');
+    logoCanvas.width = 120; logoCanvas.height = 40;
+    const lctx = logoCanvas.getContext('2d');
+    // background transparent
+    lctx.fillStyle = 'rgba(0,0,0,0)'; lctx.fillRect(0,0,120,40);
+    // blue circle
+    lctx.beginPath(); lctx.arc(20,20,14,0,Math.PI*2); lctx.closePath();
+    lctx.fillStyle = '#2563eb'; lctx.fill();
+    // white initials
+    lctx.fillStyle = '#fff'; lctx.font = 'bold 14px sans-serif'; lctx.textAlign = 'center'; lctx.textBaseline = 'middle';
+    lctx.fillText('RF', 20, 20);
+    // site name
+    lctx.fillStyle = '#1f2937'; lctx.font = '12px sans-serif'; lctx.textAlign = 'left';
+    lctx.fillText('Rifa - Evento', 44, 22);
+    const logoDataUrl = logoCanvas.toDataURL('image/png');
+
+    // QR: use Google Chart API to get a quick QR image with ticket metadata
+    const qrText = encodeURIComponent(JSON.stringify({ ticket: p.ticketNumber || null, id: p.id || null }));
+    const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=${qrText}&chld=L|1`;
+
+    // load QR image
+    const qrImg = await new Promise((res, rej) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => res(im);
+      im.onerror = (e) => rej(e);
+      im.src = qrUrl;
+    });
+
+    // draw images into PDF: logo at top-left, QR at bottom-right of the boxed area
+    // Add logo
+    const logoWmm = 30; const logoHmm = 10; // approximate mm sizes
+    doc.addImage(logoDataUrl, 'PNG', 14, 6, logoWmm, logoHmm);
+
+    // Convert QR image to data URL via canvas (to ensure CORS-safety)
+    const qrCanvas = document.createElement('canvas');
+    qrCanvas.width = qrImg.width; qrCanvas.height = qrImg.height;
+    const qctx = qrCanvas.getContext('2d');
+    qctx.drawImage(qrImg, 0, 0);
+    const qrDataUrl = qrCanvas.toDataURL('image/png');
+    const qrWmm = 28; const qrHmm = 28;
+    doc.addImage(qrDataUrl, 'PNG', pageW - 14 - qrWmm, boxY + 6, qrWmm, qrHmm);
+
+    // Trigger save after images are embedded
+    const filename = `recibo_${receiptId}.pdf`;
+    doc.save(filename);
+    showToast('Descarga iniciada: ' + filename);
+
+  } catch (err) {
+    console.warn('Error embedding images in PDF, falling back to text-only PDF', err);
+    try {
+      const filename = `recibo_${receiptId}.pdf`;
+      doc.save(filename);
+      showToast('Descarga iniciada: ' + filename);
+    } catch (err2) {
+      console.error('Error saving PDF', err2);
+      alert('Error generando el PDF');
+    }
+  }
+
+  // Try to set a flag in Firestore that a receipt was generated
+  if (p.id && typeof db !== 'undefined') {
+    try {
+      db.collection(PARTICIPANTS_COL).doc(p.id).set({ receiptGenerated: true }, { merge: true });
+    } catch (err) {
+      // ignore write errors silently but log
+      console.warn('Could not set receiptGenerated flag', err);
+    }
+  }
+}
+
+// Simple toast helper
+function showToast(msg, ms = 2200) {
+  let t = document.getElementById('app-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'app-toast';
+    t.style.position = 'fixed';
+    t.style.right = '18px';
+    t.style.bottom = '18px';
+    t.style.background = 'rgba(17,24,39,0.95)';
+    t.style.color = '#fff';
+    t.style.padding = '10px 14px';
+    t.style.borderRadius = '8px';
+    t.style.boxShadow = '0 6px 18px rgba(2,6,23,0.2)';
+    t.style.zIndex = 9999;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => { t.style.opacity = '0'; }, ms);
 }
 
 // Wire up search and filter controls (if present)
@@ -321,8 +499,13 @@ function renderMatrix10x10(parts) {
     const occupant = byTicket.get(i);
     if (occupant) {
       cell.classList.add('taken');
+      if (occupant.paid) cell.classList.add('paid');
       // store owner id for possible highlights
       if (occupant.id) cell.dataset.id = occupant.id;
+      // make cell focusable for keyboard users
+      cell.tabIndex = 0;
+      cell.setAttribute('role', 'button');
+      cell.setAttribute('aria-label', `Ticket #${i} ocupado por ${occupant.name || 'reservado'}`);
       const small = document.createElement('div');
       small.className = 'small';
       small.textContent = occupant.name || occupant.email || 'Reservado';
@@ -332,8 +515,38 @@ function renderMatrix10x10(parts) {
   tip.textContent = `${occupant.name || ''} — ${occupant.phone || occupant.email || ''} (${paidLabel})`.trim();
       cell.appendChild(small);
       cell.appendChild(tip);
+      // Add download/view button overlay for occupied tickets (paid or not)
+      const dbtn = document.createElement('button');
+      dbtn.className = 'download-btn';
+      dbtn.textContent = occupant.paid ? 'Descargar' : 'Ver recibo';
+      if (!occupant.paid) dbtn.title = 'Este participante aún no ha pagado';
+      // accessibility: label and keyboard focus
+      dbtn.setAttribute('aria-label', `Descargar/Ver recibo ticket ${occupant.ticketNumber || ''}`);
+      dbtn.tabIndex = 0;
+      dbtn.addEventListener('click', (ev) => { ev.stopPropagation(); generateReceipt(occupant); });
+      dbtn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); dbtn.click(); } });
+      cell.appendChild(dbtn);
+
+      // Long press support for touch devices to reveal button
+      let pressTimer = null;
+      cell.addEventListener('touchstart', () => { pressTimer = setTimeout(() => cell.classList.add('show-download'), 600); });
+      cell.addEventListener('touchend', () => { clearTimeout(pressTimer); setTimeout(() => cell.classList.remove('show-download'), 2000); });
+
+      // Keyboard: show download overlay on focus, allow Enter to download
+      cell.addEventListener('focus', () => { cell.classList.add('show-download'); });
+      cell.addEventListener('blur', () => { cell.classList.remove('show-download'); });
+      cell.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          generateReceipt(occupant);
+        }
+      });
     } else {
       cell.classList.add('available');
+      // available cells should be focusable too
+      cell.tabIndex = 0;
+      cell.setAttribute('role', 'button');
+      cell.setAttribute('aria-label', `Ticket #${i} disponible`);
       const small = document.createElement('div');
       small.className = 'small';
       small.textContent = 'Disponible';
@@ -344,6 +557,7 @@ function renderMatrix10x10(parts) {
       cell.appendChild(tip);
       // click to open modal to reserve
       cell.addEventListener('click', () => openTicketModal(i));
+      cell.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openTicketModal(i); } });
     }
 
     matrixEl.appendChild(cell);
