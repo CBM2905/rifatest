@@ -446,6 +446,199 @@ async function deleteParticipant(p) {
 // --- AUTH ---
 // initAuth removed: we don't require login for quick PIN flow
 
+// Ruleta functionality
+const showRuletaBtn = document.getElementById('show-ruleta-btn');
+const ruletaContainer = document.getElementById('ruleta-container');
+const wheel = document.getElementById('wheel');
+const spinBtn = document.getElementById('spinBtn');
+const result = document.getElementById('result');
+const resultNumber = document.getElementById('resultNumber');
+const resultSource = document.getElementById('resultSource');
+
+if (showRuletaBtn) {
+  showRuletaBtn.addEventListener('click', () => {
+    if (!adminUnlocked) {
+      alert('Necesitas acceso de administrador para usar la ruleta.');
+      return;
+    }
+    ruletaContainer.style.display = ruletaContainer.style.display === 'none' ? 'block' : 'none';
+    if (ruletaContainer.style.display === 'block' && !wheel.children.length) {
+      createWheelNumbers();
+    }
+  });
+}
+
+// Colores para los números de la ruleta (0-100)
+const colors = {
+  '0': '#10b981', // Verde para el 0
+  'even': '#2d3748', // Negro para pares
+  'odd': '#e53e3e' // Rojo para impares
+};
+
+// Crear los números de la ruleta (0-100)
+function createWheelNumbers() {
+  wheel.innerHTML = '';
+  
+  // Crear números para la ruleta
+  for (let i = 0; i <= 100; i++) {
+    const numberElement = document.createElement('div');
+    numberElement.className = 'wheel-number';
+    
+    // Calcular el ángulo para cada número
+    const angle = (i * (360 / 101));
+    numberElement.style.transform = `rotate(${angle}deg)`;
+    
+    // Establecer colores alternados
+    let color;
+    if (i === 0) {
+      color = colors['0'];
+    } else if (i % 2 === 0) {
+      color = colors['even'];
+    } else {
+      color = colors['odd'];
+    }
+    
+    // Añadir elemento interior del número
+    const innerNumber = document.createElement('div');
+    innerNumber.className = 'wheel-number-inner';
+    innerNumber.style.background = color;
+    
+    // Crear el contenido del número
+    const numberText = document.createElement('span');
+    numberText.textContent = i;
+    numberText.style.transform = `rotate(-${angle}deg)`; // Mantener números derechos
+    innerNumber.appendChild(numberText);
+    
+    numberElement.appendChild(innerNumber);
+    wheel.appendChild(numberElement);
+  }
+  
+  // Añadir efecto de brillo
+  const glow = document.createElement('div');
+  glow.className = 'wheel-glow';
+  wheel.appendChild(glow);
+}
+
+
+// Obtener un número aleatorio de la API cuántica (0-100)
+async function getQuantumRandomNumber() {
+  try {
+    const response = await fetch('https://qrng.anu.edu.au/API/jsonI.php?length=1&type=uint8', {
+      method: 'GET',
+      mode: 'cors'
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error en la respuesta de la API');
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.data && data.data.length > 0) {
+      let randomValue = data.data[0];
+      return randomValue % 101;
+    } else {
+      throw new Error('Datos inválidos de la API');
+    }
+  } catch (error) {
+    console.error('Error al obtener número cuántico:', error);
+    return null;
+  }
+}
+
+if (spinBtn) {
+  spinBtn.addEventListener('click', async () => {
+    if (!adminUnlocked) {
+      alert('Necesitas acceso de administrador para usar la ruleta.');
+      return;
+    }
+
+    // Deshabilitar el botón durante el giro
+    spinBtn.disabled = true;
+    spinBtn.querySelector('.btn-content').innerHTML = `
+      <span class="dice-icon">⏳</span>
+      <span class="btn-text">Obteniendo número cuántico...</span>
+    `;
+    
+    // Ocultar resultado anterior y añadir clase de spinning
+    result.style.display = 'none';
+    wheel.classList.add('spinning');
+    
+    try {
+      // Obtener número aleatorio (0-100)
+      let number = await getQuantumRandomNumber();
+      let source = 'ANU Quantum Random Numbers';
+      
+      // Si falla la API cuántica, usar CSPRNG local
+      if (number === null) {
+        source = 'CSPRNG local';
+        const array = new Uint8Array(1);
+        window.crypto.getRandomValues(array);
+        number = array[0] % 101;
+      }
+      
+      // Calcular ángulo de parada
+      const fullRotations = 8 + Math.floor(Math.random() * 4); // Más rotaciones
+      const numberAngle = number * (360 / 101);
+      const stopAngle = fullRotations * 360 + (360 - numberAngle);
+      
+      // Aplicar la animación con easing
+      wheel.style.transition = 'transform 8s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+      wheel.style.transform = `rotate(${stopAngle}deg)`;
+      
+      // Mostrar resultado después de la animación
+      setTimeout(() => {
+        wheel.classList.remove('spinning');
+        resultNumber.textContent = number;
+        resultSource.textContent = `Fuente: ${source}`;
+        result.style.display = 'block';
+        result.classList.add('show-result');
+        
+        // Resaltar el número ganador en la matriz
+        highlightWinnerInMatrix(number);
+        
+        // Restablecer el botón
+        spinBtn.disabled = false;
+        spinBtn.querySelector('.btn-content').innerHTML = `
+          <span class="dice-icon">🎲</span>
+          <span class="btn-text">Girar Ruleta</span>
+        `;
+        
+        // Efecto de confeti al mostrar el resultado
+        showConfetti();
+      }, 8000);
+      
+    } catch (error) {
+      console.error('Error al girar la ruleta:', error);
+      wheel.classList.remove('spinning');
+      spinBtn.disabled = false;
+      spinBtn.querySelector('.btn-content').innerHTML = `
+        <span class="dice-icon">🎲</span>
+        <span class="btn-text">Girar Ruleta</span>
+      `;
+    }
+  });
+}
+
+// Función para mostrar efecto de confeti
+function showConfetti() {
+  const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96c93d'];
+  const confettiCount = 200;
+  
+  for (let i = 0; i < confettiCount; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    confetti.style.left = Math.random() * 100 + 'vw';
+    confetti.style.animationDelay = Math.random() * 3 + 's';
+    confetti.style.opacity = Math.random() + 0.5;
+    document.body.appendChild(confetti);
+    
+    // Remover después de la animación
+    setTimeout(() => confetti.remove(), 6000);
+  }
+}
+
 // (form removed in matrix-only UI)
 
 // Sortear ganador (cliente) — nota: para producción recomendamos sorteo en servidor
@@ -641,7 +834,11 @@ if (ticketForm) {
 function highlightWinnerInMatrix(winner) {
   if (!matrixEl) return;
   // Remove previous highlights
-  matrixEl.querySelectorAll('.matrix-cell').forEach(c => c.classList.remove('matrix-winner'));
+  matrixEl.querySelectorAll('.matrix-cell').forEach(c => {
+    c.classList.remove('matrix-winner');
+    c.style.animation = '';
+  });
+  
   let cell = null;
   // winner may be object, id string, or ticket number
   if (typeof winner === 'object' && winner !== null) {
@@ -659,8 +856,25 @@ function highlightWinnerInMatrix(winner) {
 
   if (cell) {
     cell.classList.add('matrix-winner');
-    // Scroll into view slightly
-    cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    cell.style.animation = 'winnerPulse 2s ease-in-out infinite';
+    
+    // Añadir corona al ganador
+    const crown = document.createElement('div');
+    crown.className = 'winner-crown';
+    crown.textContent = '👑';
+    cell.appendChild(crown);
+    
+    // Scroll into view slightly with offset
+    const yOffset = -100; // pixels from top
+    const y = cell.getBoundingClientRect().top + window.pageYOffset + yOffset;
+    window.scrollTo({top: y, behavior: 'smooth'});
+    
+    // Remover coronas anteriores
+    document.querySelectorAll('.winner-crown').forEach(c => {
+      if (c.parentElement !== cell) {
+        c.remove();
+      }
+    });
   }
 }
 

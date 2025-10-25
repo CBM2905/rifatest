@@ -124,6 +124,64 @@ function initRealtime() {
 }
 
 // --- ADMIN UI (PIN-gated) ---
+// Sorteo con random.org
+const randomOrgBtn = document.getElementById('randomorg-draw');
+const randomOrgWinner = document.getElementById('randomorg-winner');
+
+if (randomOrgBtn) {
+  randomOrgBtn.addEventListener('click', async () => {
+    randomOrgBtn.disabled = true;
+    randomOrgWinner.textContent = 'Consultando número aleatorio...';
+    let parts = participantsCache.length ? participantsCache : await fetchParticipants();
+    parts = parts.filter(p => p.ticketNumber && Number.isInteger(p.ticketNumber));
+    if (!parts.length) {
+      randomOrgWinner.textContent = 'No hay participantes.';
+      randomOrgBtn.disabled = false;
+      return;
+    }
+    try {
+      // random.org API: true random integer
+      // Puedes obtener una API key gratuita en https://api.random.org/api-keys
+  const apiKey = '39461dd0-e3b1-4f33-bf63-fd0728089013';
+      const min = Math.min(...parts.map(p => p.ticketNumber));
+      const max = Math.max(...parts.map(p => p.ticketNumber));
+      let randomNum;
+      if (apiKey) {
+        // Usar random.org si hay API key
+        const resp = await fetch('https://api.random.org/json-rpc/4/invoke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'generateIntegers',
+            params: { apiKey, n: 1, min, max, replacement: true },
+            id: 1
+          })
+        });
+        const data = await resp.json();
+        if (data && data.result && data.result.random && data.result.random.data) {
+          randomNum = data.result.random.data[0];
+        } else {
+          throw new Error('Respuesta inválida de random.org');
+        }
+      } else {
+        // Fallback: Math.random (no es verdaderamente aleatorio)
+        randomNum = parts[Math.floor(Math.random() * parts.length)].ticketNumber;
+      }
+      const winner = parts.find(p => p.ticketNumber === randomNum);
+      if (winner) {
+        randomOrgWinner.textContent = `Ganador: ${winner.name || '—'} (Ticket #${winner.ticketNumber})`;
+      } else {
+        randomOrgWinner.textContent = `Ticket ganador: #${randomNum} (no asignado)`;
+      }
+    } catch (err) {
+      randomOrgWinner.textContent = 'Error en el sorteo.';
+      console.error('random.org error', err);
+    } finally {
+      randomOrgBtn.disabled = false;
+    }
+  });
+}
 const adminOpen = document.getElementById('admin-open');
 const adminPanel = document.getElementById('admin-panel');
 const adminList = document.getElementById('admin-list');
@@ -188,6 +246,60 @@ if (adminPinForm) {
     if (adminPinModal) adminPinModal.setAttribute('aria-hidden', 'true');
     if (adminPanel) adminPanel.style.display = 'block';
     await renderAdminList();
+    // Conectar el listener al botón random.org cada vez que se abre el panel
+    const randomOrgBtn = document.getElementById('randomorg-draw');
+    const randomOrgWinner = document.getElementById('randomorg-winner');
+    if (randomOrgBtn && !randomOrgBtn._listenerAdded) {
+      randomOrgBtn.addEventListener('click', async () => {
+        randomOrgBtn.disabled = true;
+        randomOrgWinner.textContent = 'Consultando número aleatorio...';
+        let parts = participantsCache.length ? participantsCache : await fetchParticipants();
+        parts = parts.filter(p => p.ticketNumber && Number.isInteger(p.ticketNumber));
+        if (!parts.length) {
+          randomOrgWinner.textContent = 'No hay participantes.';
+          randomOrgBtn.disabled = false;
+          return;
+        }
+        try {
+          const apiKey = 'fv2jNHroTS/SmrDnBOolBwzOUeXcoBwa6UZJg8t8BHf0wDDZwwdPQsD7HIaRJ4lwcQeWICSI/ZmghZu4V4bfeA==';
+          const min = Math.min(...parts.map(p => p.ticketNumber));
+          const max = Math.max(...parts.map(p => p.ticketNumber));
+          let randomNum;
+          if (apiKey) {
+            const resp = await fetch('https://api.random.org/json-rpc/4/invoke', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'generateIntegers',
+                params: { apiKey, n: 1, min, max, replacement: true },
+                id: 1
+              })
+            });
+            const data = await resp.json();
+            if (data && data.result && data.result.random && data.result.random.data) {
+              randomNum = data.result.random.data[0];
+            } else {
+              throw new Error('Respuesta inválida de random.org');
+            }
+          } else {
+            randomNum = parts[Math.floor(Math.random() * parts.length)].ticketNumber;
+          }
+          const winner = parts.find(p => p.ticketNumber === randomNum);
+          if (winner) {
+            randomOrgWinner.textContent = `Ganador: ${winner.name || '—'} (Ticket #${winner.ticketNumber})`;
+          } else {
+            randomOrgWinner.textContent = `Ticket ganador: #${randomNum} (no asignado)`;
+          }
+        } catch (err) {
+          randomOrgWinner.textContent = 'Error en el sorteo.';
+          console.error('random.org error', err);
+        } finally {
+          randomOrgBtn.disabled = false;
+        }
+      });
+      randomOrgBtn._listenerAdded = true;
+    }
   });
 }
 
@@ -219,6 +331,61 @@ async function renderAdminList() {
     row.appendChild(btnEdit); row.appendChild(btnDel);
     adminList.appendChild(row);
   });
+
+  // Conectar el listener del botón random.org cada vez que se renderiza la lista
+  const randomOrgBtn = document.getElementById('randomorg-draw');
+  const randomOrgWinner = document.getElementById('randomorg-winner');
+  if (randomOrgBtn && !randomOrgBtn._listenerAdded) {
+    randomOrgBtn.addEventListener('click', async () => {
+      randomOrgBtn.disabled = true;
+      randomOrgWinner.textContent = 'Consultando número aleatorio...';
+      let parts = participantsCache.length ? participantsCache : await fetchParticipants();
+      parts = parts.filter(p => p.ticketNumber && Number.isInteger(p.ticketNumber));
+      if (!parts.length) {
+        randomOrgWinner.textContent = 'No hay participantes.';
+        randomOrgBtn.disabled = false;
+        return;
+      }
+      try {
+        const apiKey = 'fv2jNHroTS/SmrDnBOolBwzOUeXcoBwa6UZJg8t8BHf0wDDZwwdPQsD7HIaRJ4lwcQeWICSI/ZmghZu4V4bfeA==';
+        const min = Math.min(...parts.map(p => p.ticketNumber));
+        const max = Math.max(...parts.map(p => p.ticketNumber));
+        let randomNum;
+        if (apiKey) {
+          const resp = await fetch('https://api.random.org/json-rpc/4/invoke', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              method: 'generateIntegers',
+              params: { apiKey, n: 1, min, max, replacement: true },
+              id: 1
+            })
+          });
+          const data = await resp.json();
+          if (data && data.result && data.result.random && data.result.random.data) {
+            randomNum = data.result.random.data[0];
+          } else {
+            throw new Error('Respuesta inválida de random.org');
+          }
+        } else {
+          randomNum = parts[Math.floor(Math.random() * parts.length)].ticketNumber;
+        }
+        const winner = parts.find(p => p.ticketNumber === randomNum);
+        if (winner) {
+          randomOrgWinner.textContent = `Ganador: ${winner.name || '—'} (Ticket #${winner.ticketNumber})`;
+        } else {
+          randomOrgWinner.textContent = `Ticket ganador: #${randomNum} (no asignado)`;
+        }
+      } catch (err) {
+        randomOrgWinner.textContent = 'Error en el sorteo.';
+        console.error('random.org error', err);
+      } finally {
+        randomOrgBtn.disabled = false;
+      }
+    });
+    randomOrgBtn._listenerAdded = true;
+  }
 }
 
 // Wire up search and filter controls (if present)

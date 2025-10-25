@@ -47,13 +47,420 @@
 
     <!-- Participar and participantes removed — matrix-focused UI -->
     
-    <section class="card">
+    <section class="card admin-section">
       <h2>Administración</h2>
       <div class="muted">Acciones administrativas (requieren PIN admin).</div>
-      <button id="admin-open">Administrar participantes</button>
+      <button id="admin-open" class="btn-admin">Administrar participantes</button>
       <div id="admin-panel" style="display:none; margin-top:12px">
-        <h3>Participantes</h3>
-        <div id="admin-list"></div>
+        <div class="admin-actions">
+          <button id="show-ruleta-btn" class="btn-primary">
+            <span>🎲</span> Mostrar Ruleta
+          </button>
+          <button class="btn-secondary" onclick="window.location.href='#matrix'">
+            <span>🎫</span> Ver Tickets
+          </button>
+        </div>
+        
+        <!-- Ruleta Section -->
+        <div id="ruleta-container" class="ruleta-section" style="display: none;">
+          <h3 class="ruleta-title">Sorteo 🎲</h3>
+          <div class="ruleta-game">
+            <div class="wheel-outer">
+              <div class="wheel-container">
+                <div class="wheel" id="wheel">
+                  <!-- Los números se generarán aquí -->
+                </div>
+                <div class="wheel-overlay"></div>
+                <div class="wheel-center">
+                  <div class="center-dot"></div>
+                </div>
+                <div class="pointer"></div>
+              </div>
+            </div>
+            <div class="controls">
+              <button class="spin-btn" id="spinBtn">
+                <div class="btn-content">
+                  <span class="dice-icon">🎲</span>
+                  <span class="btn-text">Girar Ruleta</span>
+                </div>
+              </button>
+            </div>
+            <div class="result" id="result" style="display: none;">
+              <h2>¡Número Ganador!</h2>
+              <div class="result-number" id="resultNumber">0</div>
+              <div class="result-details">
+                <div class="quantum-badge">
+                  <span class="badge-icon">⚛️</span>
+                  <span class="badge-text">Aleatoriedad Cuántica Verificada</span>
+                </div>
+                <div class="result-source" id="resultSource">
+                  Fuente: ANU Quantum Random Numbers
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <style>
+            @keyframes confettiRain {
+              0% {
+                transform: translateY(-100vh) rotate(0deg);
+              }
+              100% {
+                transform: translateY(100vh) rotate(360deg);
+              }
+            }
+
+            .confetti {
+              position: fixed;
+              top: -10px;
+              width: 10px;
+              height: 20px;
+              animation: confettiRain 5s linear forwards;
+              z-index: 9999;
+            }
+
+            .ruleta-game {
+              padding: 2rem;
+              background: linear-gradient(145deg, #1a1a2e, #16213e);
+              border-radius: 20px;
+              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+              margin: 2rem auto;
+              max-width: 600px;
+            }
+
+            .wheel-outer {
+              background: linear-gradient(145deg, #2a2a3e, #26314e);
+              padding: 20px;
+              border-radius: 50%;
+              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+              margin: 0 auto;
+              width: 450px;
+              height: 450px;
+            }
+
+            .wheel-container {
+              position: relative;
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .wheel {
+              width: 100%;
+              height: 100%;
+              border-radius: 50%;
+              position: relative;
+              overflow: hidden;
+              transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+              box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.1),
+                         inset 0 0 20px rgba(0, 0, 0, 0.5);
+            }
+
+            .wheel-overlay {
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              border-radius: 50%;
+              background: radial-gradient(circle at center,
+                          transparent 60%,
+                          rgba(0, 0, 0, 0.3) 100%);
+              pointer-events: none;
+            }
+
+            .wheel-center {
+              position: absolute;
+              width: 80px;
+              height: 80px;
+              background: linear-gradient(145deg, #e11d48, #be123c);
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+              z-index: 10;
+            }
+
+            .center-dot {
+              width: 60%;
+              height: 60%;
+              background: linear-gradient(145deg, #f43f5e, #e11d48);
+              border-radius: 50%;
+              box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+            }
+
+            .wheel-number {
+              position: absolute;
+              width: 50%;
+              height: 50%;
+              transform-origin: 100% 100%;
+              left: 0;
+              top: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: bold;
+              font-size: 1.2rem;
+              color: white;
+              text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+              background: linear-gradient(90deg, 
+                rgba(255, 255, 255, 0.1),
+                rgba(255, 255, 255, 0.05));
+              border-left: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .wheel-number-inner {
+              transform: rotate(90deg);
+              background: rgba(0, 0, 0, 0.3);
+              width: 40px;
+              height: 40px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border-radius: 50%;
+              box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+            }
+
+            .pointer {
+              position: absolute;
+              top: -30px;
+              width: 40px;
+              height: 60px;
+              background: linear-gradient(145deg, #e11d48, #be123c);
+              clip-path: polygon(50% 0, 0 100%, 100% 100%);
+              z-index: 20;
+              filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+            }
+
+            .controls {
+              margin-top: 2rem;
+              text-align: center;
+            }
+
+            .spin-btn {
+              background: linear-gradient(145deg, #0ea5e9, #0284c7);
+              color: white;
+              border: none;
+              padding: 1rem 2.5rem;
+              font-size: 1.2rem;
+              border-radius: 50px;
+              cursor: pointer;
+              transition: all 0.3s ease;
+              box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
+            }
+
+            .spin-btn:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 6px 20px rgba(14, 165, 233, 0.6);
+            }
+
+            .spin-btn:disabled {
+              background: #64748b;
+              cursor: not-allowed;
+              transform: none;
+              box-shadow: none;
+            }
+
+            .btn-content {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+
+            .dice-icon {
+              font-size: 1.4rem;
+            }
+
+            .result {
+              margin-top: 2rem;
+              padding: 2rem;
+              background: rgba(255, 255, 255, 0.1);
+              border-radius: 15px;
+              backdrop-filter: blur(10px);
+              text-align: center;
+              color: white;
+            }
+
+            .result h2 {
+              font-size: 1.5rem;
+              margin-bottom: 1rem;
+              color: #f0f9ff;
+            }
+
+            .result-number {
+              font-size: 5rem;
+              font-weight: bold;
+              color: #38bdf8;
+              text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+              margin: 1rem 0;
+            }
+
+            .quantum-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              background: linear-gradient(145deg, #0ea5e9, #0284c7);
+              padding: 0.5rem 1rem;
+              border-radius: 30px;
+              font-size: 0.9rem;
+              margin: 1rem 0;
+              box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3);
+            }
+
+            .badge-icon {
+              font-size: 1.2rem;
+            }
+
+            .result-source {
+              font-size: 0.9rem;
+              color: #94a3b8;
+              margin-top: 0.5rem;
+            }
+
+            @media (max-width: 768px) {
+              .wheel-outer {
+                width: 350px;
+                height: 350px;
+              }
+
+              .wheel-number {
+                font-size: 1rem;
+              }
+
+              .wheel-number-inner {
+                width: 30px;
+                height: 30px;
+              }
+            }
+
+            /* Animaciones y efectos adicionales */
+            @keyframes glowPulse {
+              0%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+              }
+              50% {
+                opacity: 0.6;
+                transform: scale(1.05);
+              }
+            }
+
+            .wheel-glow {
+              position: absolute;
+              top: -10%;
+              left: -10%;
+              right: -10%;
+              bottom: -10%;
+              background: radial-gradient(circle at center,
+                rgba(255, 255, 255, 0.2) 0%,
+                transparent 70%);
+              pointer-events: none;
+              animation: glowPulse 2s ease-in-out infinite;
+            }
+
+            .wheel.spinning {
+              animation: wheelSpinBlur 8s cubic-bezier(0.17, 0.67, 0.12, 0.99) forwards;
+            }
+
+            @keyframes wheelSpinBlur {
+              0% {
+                filter: blur(0);
+              }
+              50% {
+                filter: blur(2px);
+              }
+              90%, 100% {
+                filter: blur(0);
+              }
+            }
+
+            .show-result {
+              animation: resultPopIn 0.5s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+            }
+
+            @keyframes resultPopIn {
+              0% {
+                transform: scale(0.8);
+                opacity: 0;
+              }
+              100% {
+                transform: scale(1);
+                opacity: 1;
+              }
+            }
+
+            @keyframes winnerPulse {
+              0%, 100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+                transform: scale(1);
+                background: linear-gradient(145deg, #22c55e, #16a34a);
+              }
+              50% {
+                box-shadow: 0 0 20px 10px rgba(34, 197, 94, 0.3);
+                transform: scale(1.05);
+                background: linear-gradient(145deg, #16a34a, #15803d);
+              }
+            }
+
+            .matrix-winner {
+              z-index: 10 !important;
+              color: white !important;
+              font-weight: bold !important;
+            }
+
+            .winner-crown {
+              position: absolute;
+              top: -20px;
+              left: 50%;
+              transform: translateX(-50%);
+              font-size: 24px;
+              filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+              animation: bounceInDown 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            }
+
+            @keyframes bounceInDown {
+              0% {
+                transform: translate(-50%, -100px);
+                opacity: 0;
+              }
+              60% {
+                transform: translate(-50%, 10px);
+                opacity: 1;
+              }
+              80% { transform: translate(-50%, -5px); }
+              100% { transform: translate(-50%, 0); }
+            }
+
+            @media (max-width: 480px) {
+              .wheel-outer {
+                width: 280px;
+                height: 280px;
+              }
+
+              .wheel-center {
+                width: 60px;
+                height: 60px;
+              }
+
+              .wheel-number {
+                font-size: 0.9rem;
+              }
+
+              .wheel-number-inner {
+                width: 25px;
+                height: 25px;
+              }
+            }
+          </style>
+        </div>
+
+        <div class="admin-list-container">
+          <h3>Lista de Participantes</h3>
+          <div id="admin-list"></div>
+        </div>
       </div>
     </section>
 
