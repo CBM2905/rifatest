@@ -86,8 +86,16 @@
               </button>
             </div>
             <div class="result" id="result" style="display: none;">
-              <h2>¡Número Ganador!</h2>
-              <div class="result-number" id="resultNumber">0</div>
+              <div class="winners-container">
+                <div class="winner-card first-place">
+                  <div class="winner-badge">🥇 Primer Lugar</div>
+                  <div class="result-number" id="firstPlaceNumber">0</div>
+                </div>
+                <div class="winner-card second-place">
+                  <div class="winner-badge">🥈 Segundo Lugar</div>
+                  <div class="result-number" id="secondPlaceNumber">0</div>
+                </div>
+              </div>
               <div class="result-details">
                 <div class="quantum-badge">
                   <span class="badge-icon">⚛️</span>
@@ -98,6 +106,68 @@
                 </div>
               </div>
             </div>
+
+            <style>
+              .winners-container {
+                display: flex;
+                gap: 2rem;
+                justify-content: center;
+                margin-bottom: 2rem;
+              }
+
+              .winner-card {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 15px;
+                padding: 1.5rem;
+                text-align: center;
+                flex: 1;
+                max-width: 200px;
+                backdrop-filter: blur(10px);
+                transition: transform 0.3s ease;
+              }
+
+              .winner-card:hover {
+                transform: translateY(-5px);
+              }
+
+              .first-place {
+                border: 2px solid #ffd700;
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+              }
+
+              .second-place {
+                border: 2px solid #c0c0c0;
+                box-shadow: 0 0 20px rgba(192, 192, 192, 0.3);
+              }
+
+              .winner-badge {
+                font-size: 1.2rem;
+                font-weight: bold;
+                margin-bottom: 1rem;
+                color: #f0f9ff;
+              }
+
+              .first-place .result-number {
+                color: #ffd700;
+                text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+              }
+
+              .second-place .result-number {
+                color: #c0c0c0;
+                text-shadow: 0 0 20px rgba(192, 192, 192, 0.5);
+              }
+
+              @media (max-width: 600px) {
+                .winners-container {
+                  flex-direction: column;
+                  align-items: center;
+                }
+
+                .winner-card {
+                  width: 100%;
+                }
+              }
+            </style>
           </div>
 
           <style>
@@ -392,16 +462,29 @@
               }
             }
 
-            @keyframes winnerPulse {
+            @keyframes firstPlaceWinnerPulse {
               0%, 100% {
-                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+                box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
                 transform: scale(1);
-                background: linear-gradient(145deg, #22c55e, #16a34a);
+                background: linear-gradient(145deg, #ffd700, #ffc000);
               }
               50% {
-                box-shadow: 0 0 20px 10px rgba(34, 197, 94, 0.3);
+                box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.3);
                 transform: scale(1.05);
-                background: linear-gradient(145deg, #16a34a, #15803d);
+                background: linear-gradient(145deg, #ffc000, #ffb700);
+              }
+            }
+
+            @keyframes secondPlaceWinnerPulse {
+              0%, 100% {
+                box-shadow: 0 0 0 0 rgba(192, 192, 192, 0.7);
+                transform: scale(1);
+                background: linear-gradient(145deg, #c0c0c0, #a0a0a0);
+              }
+              50% {
+                box-shadow: 0 0 20px 10px rgba(192, 192, 192, 0.3);
+                transform: scale(1.05);
+                background: linear-gradient(145deg, #a0a0a0, #909090);
               }
             }
 
@@ -411,7 +494,15 @@
               font-weight: bold !important;
             }
 
-            .winner-crown {
+            .first-place-winner {
+              animation: firstPlaceWinnerPulse 2s ease-in-out infinite !important;
+            }
+
+            .second-place-winner {
+              animation: secondPlaceWinnerPulse 2s ease-in-out infinite !important;
+            }
+
+            .winner-decoration {
               position: absolute;
               top: -20px;
               left: 50%;
@@ -432,6 +523,65 @@
               }
               80% { transform: translate(-50%, -5px); }
               100% { transform: translate(-50%, 0); }
+            }
+
+            .place-announcement {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background: rgba(0, 0, 0, 0.8);
+              padding: 2rem;
+              border-radius: 15px;
+              text-align: center;
+              color: white;
+              z-index: 100;
+              animation: announcementPop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            }
+
+            .place-announcement.first {
+              border: 2px solid #ffd700;
+              box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            }
+
+            .place-announcement.second {
+              border: 2px solid #c0c0c0;
+              box-shadow: 0 0 30px rgba(192, 192, 192, 0.3);
+            }
+
+            .place-announcement .medal {
+              font-size: 3rem;
+              margin-bottom: 1rem;
+              animation: medalSpin 1s ease-out;
+            }
+
+            .place-announcement .place-text {
+              font-size: 1.5rem;
+              font-weight: bold;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+            }
+
+            @keyframes announcementPop {
+              0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+              }
+              100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+              }
+            }
+
+            @keyframes medalSpin {
+              0% {
+                transform: rotateY(0deg) scale(0.5);
+                opacity: 0;
+              }
+              100% {
+                transform: rotateY(720deg) scale(1);
+                opacity: 1;
+              }
             }
 
             @media (max-width: 480px) {

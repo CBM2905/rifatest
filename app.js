@@ -520,10 +520,10 @@ function createWheelNumbers() {
 }
 
 
-// Obtener un número aleatorio de la API cuántica (0-100)
-async function getQuantumRandomNumber() {
+// Obtener números aleatorios de la API cuántica (0-100)
+async function getQuantumRandomNumbers(count = 2) {
   try {
-    const response = await fetch('https://qrng.anu.edu.au/API/jsonI.php?length=1&type=uint8', {
+    const response = await fetch(`https://qrng.anu.edu.au/API/jsonI.php?length=${count}&type=uint8`, {
       method: 'GET',
       mode: 'cors'
     });
@@ -534,14 +534,13 @@ async function getQuantumRandomNumber() {
     
     const data = await response.json();
     
-    if (data && data.data && data.data.length > 0) {
-      let randomValue = data.data[0];
-      return randomValue % 101;
+    if (data && data.data && data.data.length === count) {
+      return data.data.map(value => value % 101);
     } else {
       throw new Error('Datos inválidos de la API');
     }
   } catch (error) {
-    console.error('Error al obtener número cuántico:', error);
+    console.error('Error al obtener números cuánticos:', error);
     return null;
   }
 }
@@ -557,56 +556,98 @@ if (spinBtn) {
     spinBtn.disabled = true;
     spinBtn.querySelector('.btn-content').innerHTML = `
       <span class="dice-icon">⏳</span>
-      <span class="btn-text">Obteniendo número cuántico...</span>
+      <span class="btn-text">Obteniendo números cuánticos...</span>
     `;
     
-    // Ocultar resultado anterior y añadir clase de spinning
+    // Ocultar resultado anterior
     result.style.display = 'none';
-    wheel.classList.add('spinning');
     
     try {
-      // Obtener número aleatorio (0-100)
-      let number = await getQuantumRandomNumber();
+      // Obtener dos números aleatorios (0-100)
+      let numbers = await getQuantumRandomNumbers(2);
       let source = 'ANU Quantum Random Numbers';
       
       // Si falla la API cuántica, usar CSPRNG local
-      if (number === null) {
+      if (numbers === null) {
         source = 'CSPRNG local';
-        const array = new Uint8Array(1);
+        const array = new Uint8Array(2);
         window.crypto.getRandomValues(array);
-        number = array[0] % 101;
+        numbers = [array[0] % 101, array[1] % 101];
+        
+        // Asegurarse de que los números sean diferentes
+        while (numbers[0] === numbers[1]) {
+          window.crypto.getRandomValues(array);
+          numbers[1] = array[1] % 101;
+        }
       }
       
-      // Calcular ángulo de parada
-      const fullRotations = 8 + Math.floor(Math.random() * 4); // Más rotaciones
-      const numberAngle = number * (360 / 101);
-      const stopAngle = fullRotations * 360 + (360 - numberAngle);
+      const [firstPlace, secondPlace] = numbers;
       
-      // Aplicar la animación con easing
-      wheel.style.transition = 'transform 8s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
-      wheel.style.transform = `rotate(${stopAngle}deg)`;
+      // Función para girar la ruleta
+      const spinWheel = (number, isFirstPlace) => {
+        return new Promise(resolve => {
+          wheel.classList.add('spinning');
+          
+          // Calcular ángulo de parada
+          const fullRotations = 8 + Math.floor(Math.random() * 4);
+          const numberAngle = number * (360 / 101);
+          const stopAngle = fullRotations * 360 + (360 - numberAngle);
+          
+          // Aplicar la animación con easing
+          wheel.style.transition = `transform ${isFirstPlace ? 8 : 6}s cubic-bezier(0.17, 0.67, 0.12, 0.99)`;
+          wheel.style.transform = `rotate(${stopAngle}deg)`;
+          
+          // Mostrar anuncio del lugar actual
+          const announcement = document.createElement('div');
+          announcement.className = 'place-announcement ' + (isFirstPlace ? 'first' : 'second');
+          announcement.innerHTML = `<div class="medal">${isFirstPlace ? '🥇' : '🥈'}</div>
+                                  <div class="place-text">${isFirstPlace ? 'Primer' : 'Segundo'} Lugar</div>`;
+          document.querySelector('.wheel-container').appendChild(announcement);
+          
+          setTimeout(() => {
+            wheel.classList.remove('spinning');
+            
+            // Actualizar número ganador actual
+            const targetElement = document.getElementById(isFirstPlace ? 'firstPlaceNumber' : 'secondPlaceNumber');
+            targetElement.textContent = number;
+            
+            if (!isFirstPlace) {
+              resultSource.textContent = `Fuente: ${source}`;
+            }
+            
+            // Mostrar resultado parcial
+            result.style.display = 'block';
+            result.classList.add('show-result');
+            
+            // Resaltar ganador en la matriz
+            highlightWinners(isFirstPlace ? firstPlace : null, isFirstPlace ? null : secondPlace);
+            
+            // Efecto de confeti más pequeño para el primer lugar
+            showConfetti(isFirstPlace ? 100 : 200);
+            
+            setTimeout(() => {
+              announcement.remove();
+              resolve();
+            }, 1000);
+          }, isFirstPlace ? 8000 : 6000);
+        });
+      };
       
-      // Mostrar resultado después de la animación
-      setTimeout(() => {
-        wheel.classList.remove('spinning');
-        resultNumber.textContent = number;
-        resultSource.textContent = `Fuente: ${source}`;
-        result.style.display = 'block';
-        result.classList.add('show-result');
-        
-        // Resaltar el número ganador en la matriz
-        highlightWinnerInMatrix(number);
-        
-        // Restablecer el botón
-        spinBtn.disabled = false;
-        spinBtn.querySelector('.btn-content').innerHTML = `
-          <span class="dice-icon">🎲</span>
-          <span class="btn-text">Girar Ruleta</span>
-        `;
-        
-        // Efecto de confeti al mostrar el resultado
-        showConfetti();
-      }, 8000);
+      // Ejecutar las dos vueltas de la ruleta secuencialmente
+      await spinWheel(firstPlace, true);
+      
+      // Pequeña pausa entre giros
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Segundo giro
+      await spinWheel(secondPlace, false);
+      
+      // Restablecer el botón
+      spinBtn.disabled = false;
+      spinBtn.querySelector('.btn-content').innerHTML = `
+        <span class="dice-icon">🎲</span>
+        <span class="btn-text">Girar Ruleta</span>
+      `;
       
     } catch (error) {
       console.error('Error al girar la ruleta:', error);
@@ -831,50 +872,56 @@ if (ticketForm) {
   });
 }
 
-function highlightWinnerInMatrix(winner) {
+function highlightWinners(firstPlace, secondPlace) {
   if (!matrixEl) return;
-  // Remove previous highlights
+  
+  // Remove previous highlights and decorations
   matrixEl.querySelectorAll('.matrix-cell').forEach(c => {
-    c.classList.remove('matrix-winner');
+    c.classList.remove('matrix-winner', 'first-place-winner', 'second-place-winner');
     c.style.animation = '';
   });
+  document.querySelectorAll('.winner-decoration').forEach(d => d.remove());
   
-  let cell = null;
-  // winner may be object, id string, or ticket number
-  if (typeof winner === 'object' && winner !== null) {
-    if (winner.ticketNumber) {
-      cell = matrixEl.querySelector(`.matrix-cell[data-ticket="${winner.ticketNumber}"]`);
-    }
-    if (!cell && winner.id) {
-      cell = matrixEl.querySelector(`.matrix-cell[data-id="${winner.id}"]`);
-    }
-  } else if (typeof winner === 'number') {
-    cell = matrixEl.querySelector(`.matrix-cell[data-ticket="${winner}"]`);
-  } else if (typeof winner === 'string') {
-    cell = matrixEl.querySelector(`.matrix-cell[data-id="${winner}"]`);
-  }
-
-  if (cell) {
-    cell.classList.add('matrix-winner');
-    cell.style.animation = 'winnerPulse 2s ease-in-out infinite';
-    
-    // Añadir corona al ganador
-    const crown = document.createElement('div');
-    crown.className = 'winner-crown';
-    crown.textContent = '👑';
-    cell.appendChild(crown);
-    
-    // Scroll into view slightly with offset
-    const yOffset = -100; // pixels from top
-    const y = cell.getBoundingClientRect().top + window.pageYOffset + yOffset;
-    window.scrollTo({top: y, behavior: 'smooth'});
-    
-    // Remover coronas anteriores
-    document.querySelectorAll('.winner-crown').forEach(c => {
-      if (c.parentElement !== cell) {
-        c.remove();
+  // Función helper para resaltar una celda
+  const highlightCell = (number, place) => {
+    let cell = null;
+    if (typeof number === 'object' && number !== null) {
+      if (number.ticketNumber) {
+        cell = matrixEl.querySelector(`.matrix-cell[data-ticket="${number.ticketNumber}"]`);
       }
-    });
+      if (!cell && number.id) {
+        cell = matrixEl.querySelector(`.matrix-cell[data-id="${number.id}"]`);
+      }
+    } else if (typeof number === 'number') {
+      cell = matrixEl.querySelector(`.matrix-cell[data-ticket="${number}"]`);
+    } else if (typeof number === 'string') {
+      cell = matrixEl.querySelector(`.matrix-cell[data-id="${number}"]`);
+    }
+
+    if (cell) {
+      cell.classList.add('matrix-winner', `${place}-place-winner`);
+      cell.style.animation = 'winnerPulse 2s ease-in-out infinite';
+      
+      // Añadir decoración según el lugar
+      const decoration = document.createElement('div');
+      decoration.className = 'winner-decoration';
+      decoration.textContent = place === 'first' ? '🥇' : '🥈';
+      cell.appendChild(decoration);
+      
+      return cell;
+    }
+    return null;
+  };
+
+  // Resaltar primer y segundo lugar
+  const firstCell = highlightCell(firstPlace, 'first');
+  const secondCell = highlightCell(secondPlace, 'second');
+
+  // Scroll to first place winner
+  if (firstCell) {
+    const yOffset = -100; // pixels from top
+    const y = firstCell.getBoundingClientRect().top + window.pageYOffset + yOffset;
+    window.scrollTo({top: y, behavior: 'smooth'});
   }
 }
 
